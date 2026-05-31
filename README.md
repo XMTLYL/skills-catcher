@@ -54,15 +54,21 @@ python scripts/init_db.py
 
 5. **运行采集任务**
 ```bash
-# Code Search 采集
+# 使用统一入口
+python main.py code_search          # Code Search 采集
+python main.py repo_scan            # 仓库扫描
+python main.py update_check         # 增量更新检查
+python main.py stats                # 显示统计
+
+# 或使用独立脚本
 python scripts/run_code_search.py
-
-# 指定仓库扫描
 python scripts/run_repo_scan.py
-
-# 增量更新检查
 python scripts/update_check.py
 ```
+
+### 完整部署指南
+
+详细的部署步骤请参考：[部署指南](docs/deployment.md)
 
 ## 项目结构
 

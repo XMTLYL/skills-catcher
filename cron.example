@@ -1,0 +1,67 @@
+# Cron Configuration for GitHub Skill Indexer
+
+# This file contains example cron configurations for automated skill acquisition
+
+# ============================================================================
+# Daily Tasks
+# ============================================================================
+
+# Run Code Search every day at 3:00 AM
+# Searches GitHub for new SKILL.md files
+0 3 * * * cd /path/to/skill-catcher && /usr/bin/python3 main.py code_search >> logs/code_search.log 2>&1
+
+# Run Repository Scan every day at 4:00 AM
+# Scans known high-quality repositories
+0 4 * * * cd /path/to/skill-catcher && /usr/bin/python3 main.py repo_scan >> logs/repo_scan.log 2>&1
+
+# ============================================================================
+# Weekly Tasks
+# ============================================================================
+
+# Run Incremental Update Check every Sunday at 2:00 AM
+# Checks existing skills for updates using ETag
+0 2 * * 0 cd /path/to/skill-catcher && /usr/bin/python3 main.py update_check --limit 200 >> logs/update_check.log 2>&1
+
+# ============================================================================
+# Installation Instructions
+# ============================================================================
+
+# 1. Edit this file and replace /path/to/skill-catcher with your actual path
+# 2. Replace /usr/bin/python3 with your Python interpreter path (run: which python3)
+# 3. Install crontab:
+#    crontab -e
+# 4. Copy the desired cron entries from this file
+# 5. Save and exit
+# 6. Verify installation:
+#    crontab -l
+
+# ============================================================================
+# Log Rotation (Optional)
+# ============================================================================
+
+# To prevent log files from growing too large, add log rotation:
+# Create file: /etc/logrotate.d/skill-catcher
+
+# /path/to/skill-catcher/logs/*.log {
+#     daily
+#     rotate 30
+#     compress
+#     delaycompress
+#     missingok
+#     notifempty
+# }
+
+# ============================================================================
+# Monitoring (Optional)
+# ============================================================================
+
+# Send email notification on failure (requires mail setup):
+# MAILTO=your-email@example.com
+# 0 3 * * * cd /path/to/skill-catcher && /usr/bin/python3 main.py code_search || echo "Code Search failed" | mail -s "Skill Indexer Alert" $MAILTO
+
+# ============================================================================
+# Alternative: Using systemd timers (Linux)
+# ============================================================================
+
+# For more advanced scheduling, consider using systemd timers instead of cron
+# See: https://wiki.archlinux.org/title/Systemd/Timers

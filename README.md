@@ -2,7 +2,7 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Python](https://img.shields.io/badge/Python-3.11%2B-blue.svg)](https://www.python.org/)
-[![Tests](https://github.com/XMTLYL/skill-catcher/workflows/Tests/badge.svg)](https://github.com/XMTLYL/skill-catcher/actions)
+[![Tests](https://github.com/XMTLYL/skills-catcher/workflows/Tests/badge.svg)](https://github.com/XMTLYL/skills-catcher/actions)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 一个用于从 GitHub 自动发现、获取、解析并索引公开 Skills 的元数据索引服务。
@@ -37,7 +37,7 @@ GitHub skills-catcher 不是爬虫或镜像系统，而是一个元数据索引�
 
 1. **克隆项目**
 ```bash
-git clone https://github.com/XMTLYL/skill-catcher.git
+git clone https://github.com/XMTLYL/skills-catcher.git
 cd skill-catcher
 ```
 
@@ -286,8 +286,8 @@ grep "ERROR" logs/*.log
 
 ## 联系方式
 
-- 提交 Issue: [GitHub Issues](https://github.com/XMTLYL/skill-catcher/issues)
-- 讨论: [GitHub Discussions](https://github.com/XMTLYL/skill-catcher/discussions)
+- 提交 Issue: [GitHub Issues](https://github.com/XMTLYL/skills-catcher/issues)
+- 讨论: [GitHub Discussions](https://github.com/XMTLYL/skills-catcher/discussions)
 
 ## 参考资料
 

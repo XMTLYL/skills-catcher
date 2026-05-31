@@ -8,7 +8,7 @@
 
 如果你发现了 Bug，请：
 
-1. 检查 [Issues](https://github.com/XMTLYL/skill-catcher/issues) 确认问题是否已被报告
+1. 检查 [Issues](https://github.com/XMTLYL/skills-catcher/issues) 确认问题是否已被报告
 2. 如果没有，创建一个新的 Issue，使用 Bug Report 模板
 3. 提供详细的复现步骤和环境信息
 
@@ -103,7 +103,7 @@ docs: update deployment guide
 ### 1. 克隆项目
 
 ```bash
-git clone https://github.com/XMTLYL/skill-catcher.git
+git clone https://github.com/XMTLYL/skills-catcher.git
 cd skill-catcher
 ```
 
@@ -182,8 +182,8 @@ skill-catcher/
 
 如有问题，可以：
 
-- 创建 [Issue](https://github.com/XMTLYL/skill-catcher/issues)
-- 发起 [Discussion](https://github.com/XMTLYL/skill-catcher/discussions)
+- 创建 [Issue](https://github.com/XMTLYL/skills-catcher/issues)
+- 发起 [Discussion](https://github.com/XMTLYL/skills-catcher/discussions)
 
 ---
 

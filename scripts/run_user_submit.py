@@ -13,6 +13,8 @@ from src.parser.url_parser import URLParser
 from src.scanner.risk_scanner import RiskScanner
 from src.scanner.directory_detector import DirectoryDetector
 from src.acquisition.user_submission import UserSubmissionAcquirer
+from src.storage.skill_repository import SkillRepository
+from src.storage.task_repository import TaskRepository
 from src.utils.logger import setup_logger
 
 logger = setup_logger(__name__, 'user_submit.log')
@@ -30,7 +32,20 @@ def run_user_submit(github_url: str, skill_path: str = None):
     logger.info("Starting User Submission Processing")
     logger.info("="*60)
 
+    task_id = None
+
     try:
+        # Create task record
+        with TaskRepository() as task_repo:
+            task = task_repo.create_task(
+                task_type='user_submit',
+                query_text=github_url
+            )
+            task_id = task.id
+            task_repo.start_task(task_id)
+
+        logger.info(f"Created task ID: {task_id}")
+
         # Initialize components
         logger.info("Initializing components...")
         github_client = GitHubClient()
@@ -55,12 +70,39 @@ def run_user_submit(github_url: str, skill_path: str = None):
 
         result = acquirer.acquire(github_url, skill_path)
 
+        # Save records to database
+        logger.info(f"Saving {len(result.records)} records to database...")
+        saved_count = 0
+
+        with SkillRepository() as skill_repo:
+            for record in result.records:
+                try:
+                    if record.get('not_modified'):
+                        continue
+
+                    skill_repo.upsert(record)
+                    saved_count += 1
+
+                except Exception as e:
+                    logger.error(f"Failed to save record: {e}")
+
+        logger.info(f"Successfully saved {saved_count} records to database")
+
+        # Update task status
+        with TaskRepository() as task_repo:
+            task_repo.complete_task(
+                task_id=task_id,
+                total_found=result.total_found,
+                total_saved=saved_count,
+                total_skipped=result.total_skipped
+            )
+
         # Print summary
         print("\n" + "="*60)
         print("✅ User Submission Processing Completed")
         print("="*60)
         print(f"发现: {result.total_found}")
-        print(f"保存: {result.total_saved}")
+        print(f"保存到数据库: {saved_count}")
         print(f"跳过: {result.total_skipped}")
         print(f"失败: {result.total_failed}")
         print("="*60)
@@ -69,6 +111,8 @@ def run_user_submit(github_url: str, skill_path: str = None):
         if result.records:
             print("\n处理结果:")
             for i, record in enumerate(result.records, 1):
+                if record.get('not_modified'):
+                    continue
                 print(f"\n{i}. {record['name']}")
                 print(f"   仓库: {record['repo_full_name']}")
                 print(f"   路径: {record['skill_path']}")
@@ -77,11 +121,17 @@ def run_user_submit(github_url: str, skill_path: str = None):
 
         logger.info(f"Processing completed: {result}")
 
-        # TODO: Save records to database (Phase 5)
-        logger.info("Note: Database saving will be implemented in Phase 5")
-
     except Exception as e:
         logger.error(f"User submission processing failed: {e}", exc_info=True)
+
+        # Mark task as failed
+        if task_id:
+            try:
+                with TaskRepository() as task_repo:
+                    task_repo.fail_task(task_id, str(e))
+            except:
+                pass
+
         print(f"\n❌ Error: {e}")
         sys.exit(1)
 

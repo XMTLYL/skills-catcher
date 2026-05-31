@@ -12,6 +12,9 @@ from src.parser.skill_parser import SkillParser
 from src.scanner.risk_scanner import RiskScanner
 from src.scanner.directory_detector import DirectoryDetector
 from src.acquisition.repo_scanner import RepoScannerAcquirer
+from src.storage.skill_repository import SkillRepository
+from src.storage.task_repository import TaskRepository
+from src.storage.known_repo_repository import KnownRepositoryRepository
 from src.utils.logger import setup_logger
 
 logger = setup_logger(__name__, 'repo_scan.log')
@@ -28,25 +31,45 @@ def run_repo_scan(repo_full_name=None):
     logger.info("Starting Repository Scan Acquisition")
     logger.info("="*60)
 
+    task_id = None
+
     try:
+        # Determine repositories to scan
+        if repo_full_name:
+            repositories = [repo_full_name]
+            logger.info(f"Scanning specific repository: {repo_full_name}")
+        else:
+            # Load from database
+            with KnownRepositoryRepository() as known_repo:
+                known_repos = known_repo.find_all_enabled()
+                repositories = [r.repo_full_name for r in known_repos]
+
+            if not repositories:
+                logger.warning("No known repositories found in database, using defaults")
+                repositories = [
+                    "anthropics/anthropic-quickstarts",
+                    "modelcontextprotocol/servers"
+                ]
+
+            logger.info(f"Scanning {len(repositories)} known repositories")
+
+        # Create task record
+        with TaskRepository() as task_repo:
+            task = task_repo.create_task(
+                task_type='repo_tree',
+                query_text=', '.join(repositories)
+            )
+            task_id = task.id
+            task_repo.start_task(task_id)
+
+        logger.info(f"Created task ID: {task_id}")
+
         # Initialize components
         logger.info("Initializing components...")
         github_client = GitHubClient()
         parser = SkillParser()
         scanner = RiskScanner()
         detector = DirectoryDetector()
-
-        # Determine repositories to scan
-        if repo_full_name:
-            repositories = [repo_full_name]
-            logger.info(f"Scanning specific repository: {repo_full_name}")
-        else:
-            # TODO: Load from database in Phase 5
-            repositories = [
-                "anthropics/anthropic-quickstarts",
-                "modelcontextprotocol/servers"
-            ]
-            logger.info(f"Scanning {len(repositories)} known repositories")
 
         # Create acquirer
         acquirer = RepoScannerAcquirer(
@@ -61,12 +84,47 @@ def run_repo_scan(repo_full_name=None):
         logger.info("Starting acquisition...")
         result = acquirer.acquire()
 
+        # Save records to database
+        logger.info(f"Saving {len(result.records)} records to database...")
+        saved_count = 0
+
+        with SkillRepository() as skill_repo:
+            for idx, record in enumerate(result.records, 1):
+                try:
+                    if record.get('not_modified'):
+                        continue
+
+                    skill_repo.upsert(record)
+                    saved_count += 1
+
+                    if idx % 10 == 0:
+                        logger.info(f"Saved {idx}/{len(result.records)} records")
+
+                except Exception as e:
+                    logger.error(f"Failed to save record: {e}")
+
+        logger.info(f"Successfully saved {saved_count} records to database")
+
+        # Update last_scanned for repositories
+        with KnownRepositoryRepository() as known_repo:
+            for repo in repositories:
+                known_repo.update_last_scanned(repo)
+
+        # Update task status
+        with TaskRepository() as task_repo:
+            task_repo.complete_task(
+                task_id=task_id,
+                total_found=result.total_found,
+                total_saved=saved_count,
+                total_skipped=result.total_skipped
+            )
+
         # Print summary
         print("\n" + "="*60)
         print("✅ Repository Scan Completed")
         print("="*60)
         print(f"发现: {result.total_found}")
-        print(f"保存: {result.total_saved}")
+        print(f"保存到数据库: {saved_count}")
         print(f"跳过: {result.total_skipped}")
         print(f"失败: {result.total_failed}")
         print("="*60)
@@ -75,6 +133,8 @@ def run_repo_scan(repo_full_name=None):
         if result.records:
             print("\n示例记录:")
             for i, record in enumerate(result.records[:5], 1):
+                if record.get('not_modified'):
+                    continue
                 print(f"\n{i}. {record['name']}")
                 print(f"   仓库: {record['repo_full_name']}")
                 print(f"   路径: {record['skill_path']}")
@@ -83,11 +143,17 @@ def run_repo_scan(repo_full_name=None):
 
         logger.info(f"Acquisition completed: {result}")
 
-        # TODO: Save records to database (Phase 5)
-        logger.info("Note: Database saving will be implemented in Phase 5")
-
     except Exception as e:
         logger.error(f"Repository scan failed: {e}", exc_info=True)
+
+        # Mark task as failed
+        if task_id:
+            try:
+                with TaskRepository() as task_repo:
+                    task_repo.fail_task(task_id, str(e))
+            except:
+                pass
+
         print(f"\n❌ Error: {e}")
         sys.exit(1)
 

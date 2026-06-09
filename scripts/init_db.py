@@ -44,6 +44,12 @@ def main():
                         'repo_url': 'https://github.com/modelcontextprotocol/servers',
                         'source_level': 'trusted',
                         'scan_enabled': 1
+                    },
+                    {
+                        'repo_full_name': 'Xquik-dev/x-twitter-scraper',
+                        'repo_url': 'https://github.com/Xquik-dev/x-twitter-scraper',
+                        'source_level': 'normal',
+                        'scan_enabled': 1
                     }
                 ]
 
